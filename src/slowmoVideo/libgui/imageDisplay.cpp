@@ -31,10 +31,8 @@ ImageDisplay::ImageDisplay(QWidget *parent, Qt::WindowFlags f) :
 
     m_aExportImage = new QAction(tr("Export image"), this);
 
-    bool b = true;
-    b &= connect(m_aScaling, SIGNAL(triggered()), this, SLOT(repaint()));
-    b &= connect(m_aExportImage, SIGNAL(triggered()), this, SLOT(slotExportImage()));
-    Q_ASSERT(b);
+    connect(m_aScaling, SIGNAL(triggered()), this, SLOT(repaint()));
+    connect(m_aExportImage, SIGNAL(triggered()), this, SLOT(slotExportImage()));
 
     setContentsMargins(5, 5, 5, 5);
 }
@@ -125,6 +123,7 @@ void ImageDisplay::mousePressEvent(QMouseEvent *e)
 
 void ImageDisplay::mouseMoveEvent(QMouseEvent *e)
 {
+
     if (e->buttons().testFlag(Qt::LeftButton)) {
         m_states.manhattan += (e->pos()-m_states.mousePrevPos).manhattanLength();
     }

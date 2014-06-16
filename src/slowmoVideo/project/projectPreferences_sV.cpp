@@ -2,6 +2,8 @@
 #include <QtCore/QDir>
 #include <QDesktopServices>
 
+#include "config.h"
+
 ProjectPreferences_sV::ProjectPreferences_sV() :
     m_tagAxis(TagAxis_Source),
     m_viewport_t0(0, 0),
@@ -14,7 +16,16 @@ ProjectPreferences_sV::ProjectPreferences_sV() :
     m_renderFPS(24),
     m_imagesOutputDir(QDir::homePath()),
     m_imagesFilenamePattern("rendered-%1.jpg"),
-    m_videoFilename(QDesktopServices::storageLocation(QDesktopServices::MoviesLocation)+"/rendered.mpg"),
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#ifdef USE_QTKIT
+    m_videoFilename(QDesktopServices::storageLocation(QDesktopServices::MoviesLocation)+"/rendered.mov"),
+#else
+    m_videoFilename(QDesktopServices::storageLocation(QDesktopServices::MoviesLocation)+"/rendered.mp4"),
+#endif
+#else
+// deprecated in qt5 ?
+// QString path = s.value("db.path", QStandardPaths::standardLocations(QStandardPaths::DataLocation)).toString();
+#endif
     m_flowV3DLambda(20.0)
 {
 }
@@ -67,3 +78,4 @@ QString& ProjectPreferences_sV::videoCodec() { return m_vcodec; }
 
 float& ProjectPreferences_sV::flowV3DLambda() { return m_flowV3DLambda; }
 
+bool& ProjectPreferences_sV::renderFormat() { return m_renderFormat;};

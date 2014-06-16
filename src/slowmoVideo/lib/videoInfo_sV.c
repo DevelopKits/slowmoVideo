@@ -59,7 +59,8 @@ VideoInfoSV getInfo(const char filename[])
 
     AVCodecContext *pCodecContext;
     int videoStream = -1;
-    for (int i = 0; i < pFormatContext->nb_streams; i++) {
+    int i;
+    for (i = 0; i < pFormatContext->nb_streams; i++) {
 #if LIBAVCODEC_VERSION_INT < (52<<16 | 64<<8 | 0)
         if (pFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
 #else
@@ -77,7 +78,7 @@ VideoInfoSV getInfo(const char filename[])
             AVRational tb = pFormatContext->streams[i]->time_base; // Use the precise timebase of this stream.
             info.framesCount = (long)( (double)fps.num/fps.den * pFormatContext->streams[i]->duration * (double)tb.num/tb.den ); // Works really good for any type of video.
             info.streamsCount++;
-            printf("Total frames: %ld (Length: %f s)\n", info.framesCount, info.framesCount/((float)fps.num/fps.den));
+            printf("Total frames: %lld (Length: %f s)\n", info.framesCount, info.framesCount/((float)fps.num/fps.den));
         }
     }
 

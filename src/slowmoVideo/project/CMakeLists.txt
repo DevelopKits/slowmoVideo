@@ -25,6 +25,8 @@ set(SRCS_PROJ
   shutterFunctionList_sV.cpp
   motionBlur_sV.cpp
   canvasObject_sV.h
+  new_videoRenderTarget.cpp
+  work_flow.cpp
 )
 
 set(SRCS_MOC
@@ -34,10 +36,14 @@ set(SRCS_MOC
   imagesFrameSource_sV.h
   videoFrameSource_sV.h
   emptyFrameSource_sV.h
+  work_flow.h
 )
 
-qt4_wrap_cpp(MOC_OUT ${SRCS_MOC})
+qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
 
 include_directories(${FFMPEG_INCLUDE_PATHS})
 add_library(sVproj STATIC ${SRCS_PROJ} ${MOC_OUT})
+qt_use_modules(sVproj Core)
+qt_use_modules(sVproj Gui)
+qt_use_modules(sVproj Xml)
 target_link_libraries(sVproj sV sVinfo sVflow sVencode ${EXTERNAL_LIBS})

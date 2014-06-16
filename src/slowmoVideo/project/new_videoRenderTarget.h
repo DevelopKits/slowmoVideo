@@ -8,25 +8,28 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 */
 
-#ifndef VIDEORENDERTARGET_SV_H
-#define VIDEORENDERTARGET_SV_H
+/*
+ * handle both ffmpeg and qtkit
+ */
+#ifndef NEW_VIDEORENDERTARGET_SV_H
+#define NEW_VIDEORENDERTARGET_SV_H
 
 #include "abstractRenderTarget_sV.h"
 
-struct VideoOut_sV;
+class VideoWriter;
 class RenderTask_sV;
 
 /// Produces videos from frames.
-class VideoRenderTarget_sV : public AbstractRenderTarget_sV
+class newVideoRenderTarget : public AbstractRenderTarget_sV
 {
 public:
     /// Constructs a new video render target
-    VideoRenderTarget_sV(RenderTask_sV *parentRenderTask);
-    virtual ~VideoRenderTarget_sV();
+    newVideoRenderTarget(RenderTask_sV *parentRenderTask);
+    virtual ~newVideoRenderTarget();
 
     /// openRenderTarget() will throw an error if the target file cannot be opened.
     void setTargetFile(const QString& filename);
-    /// Set a custom video codec (see <pre>ffmpeg -codecs</pre> for a list of available codecs).
+    /// Set a custom video codec
     void setVcodec(const QString& codec);
 
     void openRenderTarget() throw(Error_sV);
@@ -38,10 +41,10 @@ public slots:
 private:
     QString m_filename;
     QString m_vcodec;
-    VideoOut_sV *m_videoOut;
+    VideoWriter* writer;
 
     int m_width;
     int m_height;
 };
 
-#endif // VIDEORENDERTARGET_SV_H
+#endif // NEW_VIDEORENDERTARGET_SV_H

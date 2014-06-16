@@ -19,10 +19,12 @@ extern "C" {
 #include "../lib/videoInfo_sV.h"
 }
 
+
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtGui/QImage>
+#include <QThread>
 
 class ProjectPreferences_sV;
 class Flow_sV;
@@ -36,6 +38,7 @@ class QSignalMapper;
 class QProcess;
 class QRegExp;
 class QTimer;
+class WorkerFlow;
 
 /**
   \brief slowmoVideo project holding all important information.
@@ -145,11 +148,23 @@ private:
 
     void init();
 
+    /**
+     * @brief Thread object which will let us manipulate the running thread
+     */
+    QThread *thread[4];
+    /**
+     * @brief Object which contains methods that should be runned in another thread
+     */
+    WorkerFlow *worker[4];
+
+    
 private:
     /// Count how many times V3D failed, after a certain limit we assume the user does not have an nVidia card
     /// and constantly switch to OpenCV
     int m_v3dFailCounter;
 
+    // launch a worker thread for optical flow
+    void startFlow(int threadid,const FrameSize frameSize,int direction);
 };
 
 #endif // PROJECT_SV_H

@@ -15,10 +15,7 @@ the Free Software Foundation, either version 3 of the License, or
 #include "lib/flowTools_sV.h"
 #include "lib/flowVisualization_sV.h"
 
-#include <QtCore>
-#include <QObject>
 #include <QtCore/QDebug>
-#include <QtWidgets>
 
 FlowEditCanvas::FlowEditCanvas(QWidget *parent) :
     QWidget(parent),
@@ -33,6 +30,7 @@ FlowEditCanvas::FlowEditCanvas(QWidget *parent) :
     connect(ui->flow, SIGNAL(signalRectDrawn(QRectF)), this, SLOT(slotRectDrawn(QRectF)));
     connect(ui->flow, SIGNAL(signalMouseMoved(float,float)), this, SLOT(slotExamineValues(float,float)));
     connect(ui->amplification, SIGNAL(valueChanged(int)),this, SLOT(newAmplification(int)));
+    
 }
 
 FlowEditCanvas::~FlowEditCanvas()

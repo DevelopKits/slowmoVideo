@@ -7,6 +7,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 */
+#include "config.h"
 
 #include "renderingDialog.h"
 #include "ui_renderingDialog.h"
@@ -17,7 +18,11 @@ the Free Software Foundation, either version 3 of the License, or
 #include "project/projectPreferences_sV.h"
 #include "project/renderTask_sV.h"
 #include "project/imagesRenderTarget_sV.h"
+#ifdef USE_FFMPEG
+#include "project/new_videoRenderTarget.h"
+#else
 #include "project/videoRenderTarget_sV.h"
+#endif
 #include "project/emptyFrameSource_sV.h"
 
 #include <QButtonGroup>
@@ -50,7 +55,7 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
 
     // Optical flow
     ui->lambda->setValue(m_project->preferences()->flowV3DLambda());
-
+#if 0
     ui->flowMethod->clear();
     ui->flowMethod->addItem(tr("GPU GL V3D"),QVariant(1));
     ui->flowMethod->addItem(tr("OpenCV-Farnback (cpu)"),QVariant(2));
@@ -68,7 +73,8 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
 	qDebug() << "found index : "<< index << "for : " <<settings.value("preferences/flowMethod", "V3D").toString() ;
 	//  connect( this->ui.comboBox, SIGNAL( activated(int) ), this, SLOT(comboBox_Activated()) );
 	
-	
+#endif
+    
     // Motion blur
     ui->maxSamples->setValue(m_project->motionBlur()->maxSamples());
     ui->slowmoSamples->setValue(m_project->motionBlur()->slowmoSamples());
@@ -124,30 +130,28 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
         ui->cbInterpolation->setCurrentIndex(ui->cbInterpolation->findData(QVariant(m_project->preferences()->renderInterpolationType())));
     }
 
-    bool b = true;
-    b &= connect(m_targetGroup, SIGNAL(buttonClicked(int)), this, SLOT(slotUpdateRenderTarget()));
-    b &= connect(m_sectionGroup, SIGNAL(buttonClicked(int)), this, SLOT(slotSectionModeChanged()));
-    b &= connect(ui->timeStart, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
-    b &= connect(ui->timeEnd, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
+    connect(m_targetGroup, SIGNAL(buttonClicked(int)), this, SLOT(slotUpdateRenderTarget()));
+    connect(m_sectionGroup, SIGNAL(buttonClicked(int)), this, SLOT(slotSectionModeChanged()));
+    connect(ui->timeStart, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
+    connect(ui->timeEnd, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
 
-    b &= connect(ui->cbStartTag, SIGNAL(currentIndexChanged(int)), this, SLOT(slotTagIndexChanged()));
-    b &= connect(ui->cbEndTag, SIGNAL(currentIndexChanged(int)), this, SLOT(slotTagIndexChanged()));
+    connect(ui->cbStartTag, SIGNAL(currentIndexChanged(int)), this, SLOT(slotTagIndexChanged()));
+    connect(ui->cbEndTag, SIGNAL(currentIndexChanged(int)), this, SLOT(slotTagIndexChanged()));
 
-    b &= connect(ui->bAbort, SIGNAL(clicked()), this, SLOT(reject()));
-    b &= connect(ui->bOk, SIGNAL(clicked()), this, SLOT(accept()));
-    b &= connect(ui->bSave, SIGNAL(clicked()), this, SLOT(slotSaveSettings()));
+    connect(ui->bAbort, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(ui->bOk, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(ui->bSave, SIGNAL(clicked()), this, SLOT(slotSaveSettings()));
 
-    b &= connect(ui->cbFps, SIGNAL(editTextChanged(QString)), this, SLOT(slotValidate()));
+    connect(ui->cbFps, SIGNAL(editTextChanged(QString)), this, SLOT(slotValidate()));
 
-    b &= connect(ui->imagesOutputDir, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
-    b &= connect(ui->imagesFilenamePattern, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
-    b &= connect(ui->videoOutputFile, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
-    b &= connect(ui->bImagesBrowseDir, SIGNAL(clicked()), this, SLOT(slotBrowseImagesDir()));
-    b &= connect(ui->bBrowseVideoOutputFile, SIGNAL(clicked()), this, SLOT(slotBrowseVideoFile()));
-    Q_ASSERT(b);
+    connect(ui->imagesOutputDir, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
+    connect(ui->imagesFilenamePattern, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
+    connect(ui->videoOutputFile, SIGNAL(textChanged(QString)), this, SLOT(slotValidate()));
+    connect(ui->bImagesBrowseDir, SIGNAL(clicked()), this, SLOT(slotBrowseImagesDir()));
+    connect(ui->bBrowseVideoOutputFile, SIGNAL(clicked()), this, SLOT(slotBrowseVideoFile()));
 
     // Restore rendering start/end
-    //int index;
+    int index;
     index = ui->cbStartTag->findText(m_project->preferences()->renderStartTag());
     if (index >= 0) {
         ui->cbStartTag->setCurrentIndex(index);
@@ -166,6 +170,11 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
 #if QT_VERSION >= 0x040700
     ui->timeStart->setPlaceholderText(QVariant(m_project->nodes()->startTime()).toString());
     ui->timeEnd->setPlaceholderText(QVariant(m_project->nodes()->endTime()).toString());
+#endif
+
+#ifndef USE_QTKIT
+     ui->use_qt->setChecked(false);
+     ui->use_qt->setEnabled(false);
 #endif
 
     slotUpdateRenderTarget();
@@ -201,10 +210,16 @@ RenderTask_sV* RenderingDialog::buildTask()
             renderTarget->setTargetDir(imagesOutputDir);
             task->setRenderTarget(renderTarget);
         } else if (ui->radioVideo->isChecked()) {
+	#ifdef USE_FFMPEG
+	#warning "using QTKit version"
+            newVideoRenderTarget *renderTarget = new newVideoRenderTarget(task);
+    #else
+	#warning "should not use this"
             VideoRenderTarget_sV *renderTarget = new VideoRenderTarget_sV(task);
-            renderTarget->setTargetFile(ui->videoOutputFile->text());
+	#endif
+			renderTarget->setTargetFile(ui->videoOutputFile->text());
             renderTarget->setVcodec(ui->vcodec->text());
-            task->setRenderTarget(renderTarget);
+			task->setRenderTarget(renderTarget);
         } else {
             qDebug() << "Render target is neither images nor video. Not implemented?";
             Q_ASSERT(false);
@@ -277,6 +292,8 @@ void RenderingDialog::slotSaveSettings()
     const QString imagesFilenamePattern = ui->imagesFilenamePattern->text();
     const float fps = ui->cbFps->currentText().toFloat();
 
+	const bool use_qt = ui->use_qt->isChecked();
+	
     m_project->motionBlur()->setMaxSamples(ui->maxSamples->value());
     m_project->motionBlur()->setSlowmoSamples(ui->slowmoSamples->value());
     m_project->preferences()->flowV3DLambda() = ui->lambda->value();
@@ -313,7 +330,8 @@ void RenderingDialog::slotSaveSettings()
     m_project->preferences()->renderFrameSize() = size;
     m_project->preferences()->renderFPS() = fps;
     m_project->preferences()->renderTarget() = ui->radioImages->isChecked() ? "images" : "video";
-
+	m_project->preferences()->renderFormat() = use_qt;
+	
     accept();
 }
 

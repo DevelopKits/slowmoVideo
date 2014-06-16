@@ -7,6 +7,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 */
+#include "config.h"
 
 #include "slowmoRenderer_sV.h"
 
@@ -15,7 +16,11 @@ the Free Software Foundation, either version 3 of the License, or
 #include "project/xmlProjectRW_sV.h"
 #include "project/renderTask_sV.h"
 #include "project/imagesRenderTarget_sV.h"
+#ifdef USE_FFMPEG
+#include "project/new_videoRenderTarget.h"
+#else
 #include "project/videoRenderTarget_sV.h"
+#endif
 #include "project/flowSourceV3D_sV.h"
 
 #include <iostream>
@@ -60,13 +65,11 @@ void SlowmoRenderer_sV::load(QString filename) throw(Error)
         task->setTimeRange(m_start, m_end);
         task->setQtConnectionType(Qt::AutoConnection);
 
-        bool b = true;
-        b &= connect(m_project->renderTask(), SIGNAL(signalNewTask(QString,int)), this, SLOT(slotTaskSize(QString,int)));
-        b &= connect(m_project->renderTask(), SIGNAL(signalTaskProgress(int)), this, SLOT(slotProgressInfo(int)));
-        b &= connect(m_project->renderTask(), SIGNAL(signalRenderingAborted(QString)), this, SLOT(slotFinished(QString)));
-        b &= connect(m_project->renderTask(), SIGNAL(signalRenderingFinished(QString)), this, SLOT(slotFinished(QString)));
-        b &= connect(m_project->renderTask(), SIGNAL(signalRenderingStopped(QString)), this, SLOT(slotFinished(QString)));
-        Q_ASSERT(b);
+        connect(m_project->renderTask(), SIGNAL(signalNewTask(QString,int)), this, SLOT(slotTaskSize(QString,int)));
+        connect(m_project->renderTask(), SIGNAL(signalTaskProgress(int)), this, SLOT(slotProgressInfo(int)));
+        connect(m_project->renderTask(), SIGNAL(signalRenderingAborted(QString)), this, SLOT(slotFinished(QString)));
+        connect(m_project->renderTask(), SIGNAL(signalRenderingFinished(QString)), this, SLOT(slotFinished(QString)));
+        connect(m_project->renderTask(), SIGNAL(signalRenderingStopped(QString)), this, SLOT(slotFinished(QString)));
 
     } catch (Error_sV &err) {
         throw Error(err.message().toStdString());
@@ -87,10 +90,16 @@ void SlowmoRenderer_sV::setFps(double fps)
 
 void SlowmoRenderer_sV::setVideoRenderTarget(QString filename, QString codec)
 {
+#ifdef USE_FFMPEG
+	#warning "using QTKit version"
+    newVideoRenderTarget *vrt = new newVideoRenderTarget(m_project->renderTask());     
+#else
+	#warning "should not use this"
     VideoRenderTarget_sV *vrt = new VideoRenderTarget_sV(m_project->renderTask());
+#endif
     vrt->setTargetFile(QString(filename));
     vrt->setVcodec(QString(codec));
-    m_project->renderTask()->setRenderTarget(vrt);
+    m_project->renderTask()->setRenderTarget(vrt); 
     m_renderTargetSet = true;
 }
 

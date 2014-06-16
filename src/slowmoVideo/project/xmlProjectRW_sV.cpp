@@ -21,9 +21,12 @@ the Free Software Foundation, either version 3 of the License, or
 #include "motionBlur_sV.h"
 #include "abstractFlowSource_sV.h"
 
+
 #include <QDebug>
 #include <QTextStream>
-#include <QXmlQuery>
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+//#include <QXmlQuery>
+#endif // qt5 
 
 
 int XmlProjectRW_sV::saveProject(Project_sV *project, QString filename) throw(Error_sV)
@@ -268,6 +271,7 @@ const QDomElement XmlProjectRW_sV::frameSource(QDomDocument *doc, const Abstract
 
 void XmlProjectRW_sV::loadFrameSource(QXmlStreamReader *reader, Project_sV *project) throw(FrameSourceError)
 {
+	//qDebug() << "loadFrameSource";
     QStringRef frameSourceType = reader->attributes().value("type");
     if (frameSourceType.compare("videoFile") == 0) {
         while (reader->readNextStartElement()) {
@@ -305,6 +309,7 @@ void XmlProjectRW_sV::loadFrameSource(QXmlStreamReader *reader, Project_sV *proj
         qDebug() << "Unknown frame source: " << frameSourceType << "; Cannot load!";
         throw FrameSourceError(QObject::trUtf8("Unknown frame source “%1”. Cannot load the project.").arg(frameSourceType.toString()));
     } 
+    //qDebug() << "loadFrameSource ended";
 }
 
 Project_sV* XmlProjectRW_sV::loadProject(QString filename, QString *warning) throw(FrameSourceError, Error_sV)

@@ -12,6 +12,7 @@ set(SRCS
   mainwindow.cpp
   canvas.cpp
   canvasTools.cpp
+  flowEditCanvas.cpp
   frameMonitor.cpp
   renderPreview.cpp
   dialogues/newProjectDialog.cpp
@@ -31,6 +32,7 @@ set(SRCS_UI
   canvas.ui
   frameMonitor.ui
   renderPreview.ui
+  flowEditCanvas.ui
   dialogues/newProjectDialog.ui
   dialogues/preferencesDialog.ui
   dialogues/projectPreferencesDialog.ui
@@ -46,6 +48,7 @@ set(SRCS_MOC
   mainwindow.h
   canvas.h
   frameMonitor.h
+  flowEditCanvas.h
   renderPreview.h
   dialogues/newProjectDialog.h
   dialogues/preferencesDialog.h
@@ -85,10 +88,6 @@ if(APPLE)
 endif()
 
 if (LINUX) 
-	install ( FILES ${PROJECT_BINARY_DIR}/slowmoUI.desktop DESTINATION share/applications
-		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-	)
-
 	# desktop file section
 	file( WRITE "${PROJECT_BINARY_DIR}/slowmoUI.desktop"
 	"#!/usr/bin/env xdg-open
@@ -104,7 +103,11 @@ if (LINUX)
 	Categories=Application;Qt;Video\n")
 
 	install ( FILES res/slowmotion.png DESTINATION share/icons )
+	install ( FILES ${PROJECT_BINARY_DIR}/slowmoUI.desktop DESTINATION share/applications
+		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+	)
 endif()
+
 
 # Without these includes the promoted widgets fail to compile
 # since the headers are not found. (For whatever reason.)
@@ -114,11 +117,11 @@ include_directories(..)
 
 # Embed images in the binary
 set(SRC_RES resources.qrc)
-qt4_add_resources(RES_OUT ${SRC_RES})
+qt_add_resources(RES_OUT ${SRC_RES})
 
 # Generate header files from the .ui files
-qt4_wrap_ui(UI_H_OUT ${SRCS_UI})
-qt4_wrap_cpp(MOC_OUT ${SRCS_MOC})
+qt_wrap_ui(UI_H_OUT ${SRCS_UI})
+qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
 
 # Include the generated header files
 include_directories(${CMAKE_BINARY_DIR}/slowmoVideo/slowmoUI)
@@ -128,13 +131,14 @@ message(STATUS "slowmoUI path ffmpeg : ${FFMPEG_LIBRARY_DIR} ")
 link_directories(${FFMPEG_LIBRARY_DIR})
 add_executable(slowmoUI WIN32 MACOSX_BUNDLE ${SRCS} ${MOC_OUT} ${UI_H_OUT} ${RES_OUT})
 #target_link_libraries(slowmoUI sVproj sVvis sVgui  ${EXTERNAL_LIBS} ${ADDITIONAL_LIBS} )
+
+qt_use_modules(slowmoUI Script Widgets Concurrent Gui  Core )
 target_link_libraries(slowmoUI sVproj sVvis sVgui )
 
 if(APPLE)
   configure_file(${CMAKE_SOURCE_DIR}/slowmoVideo/slowmoUI/res/Info.plist.cmake ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
   set_target_properties(${PROGNAME} PROPERTIES
                         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
-
   #ADD_CUSTOM_COMMAND(TARGET slowmoUI
   #  POST_BUILD
   #  COMMAND cp Info.plist slowmoUI.app/Contents/Info.plist
@@ -147,11 +151,34 @@ endif()
 #        BUNDLE DESTINATION . COMPONENT Runtime
 #        RUNTIME DESTINATION ${BIN_INSTALL_DIR} COMPONENT Runtime)
 
-if (APPLE)
-	install(TARGETS slowmoUI DESTINATION ".")
-       include(DeployQt4)
-       install_qt4_executable(slowmoUI.app "qjpeg"  )
-	
+if (UNIX)
+# create desktop file for KDE/Gnome
+# desktop file section
+	file( WRITE "${PROJECT_BINARY_DIR}/slowmoUI.desktop"
+		"#!/usr/bin/env xdg-open
+		[Desktop Entry]
+		Type=Application
+		Comment=Slow Motion Video
+		Exec=${CMAKE_INSTALL_PREFIX}/bin/slowmoUI
+		GenericName=slowmoVideo
+		Icon=${CMAKE_INSTALL_PREFIX}/icons/slowmotion.png
+		MimeType=
+		Name=slowmoUI
+		Terminal=false
+		Categories=Application;Qt;Video\n")
+
+	#install ( FILES icons/slowmoUI.png DESTINATION share/icons )
+	install ( FILES res/AppIcon.png DESTINATION share/icons )
+	install ( FILES ${PROJECT_BINARY_DIR}/slowmoUI.desktop DESTINATION share/applications
+		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+)
+endif()
+
+if (APPLE OR WIN32)
+       install(TARGETS slowmoUI DESTINATION ".")
+       include(DeployQt4) # 2.8.7 or later
+       set( PLUGINS qjpeg;qtiff )
+       install_qt4_executable(slowmoUI.app "${PLUGINS}"  )
 else()
 	install(TARGETS slowmoUI DESTINATION ${DEST})
        include(DeployQt4)
