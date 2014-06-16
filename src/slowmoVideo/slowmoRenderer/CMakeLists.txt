@@ -10,6 +10,7 @@ set(SRCS_MOC
 )
 qt4_wrap_cpp(MOC_OUT ${SRCS_MOC})
 
+link_directories(${FFMPEG_LIBRARY_DIR})
 add_executable(slowmoRenderer ${SRCS} ${MOC_OUT})
-target_link_libraries(slowmoRenderer sVproj ${EXTERNAL_LIBS})
+target_link_libraries(slowmoRenderer sVproj )
 install(TARGETS slowmoRenderer DESTINATION ${DEST})

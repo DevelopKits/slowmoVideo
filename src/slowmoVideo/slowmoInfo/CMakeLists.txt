@@ -1,6 +1,7 @@
 
 message(STATUS "slowmoInfo Bundle will be : ${MACOSX_BUNDLE} =>  ${PROJECT_NAME} ")
 
+link_directories(${FFMPEG_LIBRARY_DIR})
 add_executable(slowmoInfo slowmoInfo.cpp)
 target_link_libraries(slowmoInfo sV ${EXTERNAL_LIBS})
 

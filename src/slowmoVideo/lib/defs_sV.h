@@ -3,11 +3,14 @@
 
 #include "macros_sV.h"
 
-#if defined(WINDOWS) && !defined(MXE)
-typedef __int64 int64_t;
+#if defined(WINDOWS) && !defined(MXE) 
+//todo msys typedef __int64 int64_t;
+//typedef unsigned long long int64_t;
 #else
 #include <inttypes.h>
 #endif
+
+#include <inttypes.h>
 
 /// Holds information about a video input file.
 typedef struct VideoInfoSV {
@@ -21,6 +24,7 @@ typedef struct VideoInfoSV {
     int height;
     /// Number of frames in total
     int64_t framesCount;
+    //unsigned long long framesCount;
     /// Number of available video streams
     int streamsCount;
 } VideoInfoSV;

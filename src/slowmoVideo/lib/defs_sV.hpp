@@ -14,10 +14,11 @@ the Free Software Foundation, either version 3 of the License, or
 #include "macros_sV.h"
 
 #if defined(WINDOWS) && !defined(MXE)
-typedef __int64 int64_t;
+//todo msys typedef __int64 int64_t;
 #else
 #include <inttypes.h>
 #endif
+#include <inttypes.h>
 
 #include <QtCore/QDebug>
 #include <QtCore/QString>

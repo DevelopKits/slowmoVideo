@@ -18,20 +18,24 @@ SET( FFMPEG_SWS_HEADERS swscale.h )
 SET( FFMPEG_SWS_PATH_SUFFIXES libswscale )
 
 if( WIN32 )
+      message("  checking FFMPEG in win32 " )
    #SET( FFMPEG_LIBRARIES avformat.lib avcodec.lib avutil.lib avdevice.lib )
-   SET( FFMPEG_LIBRARIES avformat.lib avcodec.lib avutil.lib )
-   SET( FFMPEG_SWS_LIBRARIES swscale.lib )
-   SET( FFMPEG_LIBRARY_DIR $ENV{FFMPEGDIR}\\lib )
-   SET( FFMPEG_INCLUDE_PATHS $ENV{FFMPEGDIR}\\include )
+   #SET( FFMPEG_LIBRARIES avformat.lib avcodec.lib avutil.lib )
+   #SET( FFMPEG_SWS_LIBRARIES swscale.lib )
+   SET( FFMPEG_LIBRARIES avformat avcodec avutil )
+   SET( FFMPEG_SWS_LIBRARIES swscale )
+
+   SET( FFMPEG_LIBRARY_DIR $ENV{FFMPEGDIR}/lib )
+   SET( FFMPEG_INCLUDE_PATHS $ENV{FFMPEGDIR}/include )
 
    # check to see if we can find swscale
-   SET( TMP_ TMP-NOTFOUND )
-   FIND_PATH( TMP_ ${FFMPEG_SWS_LIBRARIES}
-              PATHS ${FFMPEG_LIBRARY_DIR} )
-   IF ( TMP_ )
+   FIND_LIBRARY(LIB_SWSCALE_ swscale ${FFMPEG_LIBRARY_DIR} )
+   IF ( LIB_SWSCALE_ )
       SET( SWSCALE_FOUND TRUE )
-   ENDIF( TMP_ )
+   ENDIF( LIB_SWSCALE_ )
+      SET( SWSCALE_FOUND TRUE )
 else( WIN32 )
+      message("  checking FFMPEG in unix " )
    #SET( FFMPEG_LIBRARIES avformat avcodec avutil avdevice )
    SET( FFMPEG_LIBRARIES avformat avcodec avutil )
    SET( FFMPEG_SWS_LIBRARIES swscale )
@@ -130,8 +134,10 @@ ENDIF ( ${INC_SUCCESS} EQUAL ${LIST_SIZE_} )
 string(REPLACE "/usr/include/" "" FFMPEG_INCLUDE_DIR "${FFMPEG_INCLUDE_DIR}")
 
 # add libx264 ...
+if (APPLE)
 # todo: better find ...
 SET(FFMPEG_LIBRARIES ${FFMPEG_LIBRARIES} "/Volumes/externe/Documents/Sources/slowlib/lib/libx264.a" )
+endif()
 
 # On OS X we ffmpeg libraries depend on VideoDecodeAcceleration and CoreVideo frameworks
 IF (APPLE)
@@ -139,3 +145,4 @@ IF (APPLE)
 ENDIF()
 
 
+message(STATUS " path to ffmpeg : ${FFMPEG_LIBRARY_DIR} " )

@@ -10,6 +10,7 @@ set(SOURCES_VINFO
   videoInfo.cpp
 )
 
+link_directories(${FFMPEG_LIBRARY_DIR})
 add_executable(slowmoInterpolate ${SOURCES_MAIN})
 target_link_libraries(slowmoInterpolate sV sVflow ${EXTERNAL_LIBS})
 

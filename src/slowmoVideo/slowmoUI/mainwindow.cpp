@@ -330,10 +330,40 @@ void MainWindow::loadProject(Project_sV *project)
     m_project->frameSource()->initialize();
     
 }
+
+#if _CHECK_H
+bool MainWindow::okToContinue()
+{
+    if (isWindowModified()) {
+        int r = QMessageBox::warning(this, tr("Spreadsheet"),
+                        tr("The document has been modified.\n"
+                           "Do you want to save your changes?"),
+                        QMessageBox::Yes | QMessageBox::No
+                        | QMessageBox::Cancel);
+        if (r == QMessageBox::Yes) {
+            return save();
+        } else if (r == QMessageBox::Cancel) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
 void MainWindow::slotLoadProjectDialog()
 {
     QString dir = m_settings.value("directories/lastOpenedProject", QDir::current().absolutePath()).toString();
     QString file = QFileDialog::getOpenFileName(this, tr("Load Project"), dir, tr("slowmoVideo projects (*.sVproj)"));
+
+#if _CHECK_H
+if (okToContinue()) {
+        QString fileName = QFileDialog::getOpenFileName(this,
+                                   tr("Open Spreadsheet"), ".",
+                                   tr("Spreadsheet files (*.sp)"));
+        if (!fileName.isEmpty())
+            loadFile(fileName);
+    }
+#endif
 
     if (!file.isEmpty()) {
         qDebug() << file;

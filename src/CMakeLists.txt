@@ -33,7 +33,7 @@ option (ENABLE_TESTS "Build the unit tests" TRUE)
 set(ADDITIONAL_LIBS "")
 if(MSYS)
   message(STATUS "MSYS system detected.")
-  include("${PROJECT_SOURCE_DIR}/cmake/MingwCrossEnv.cmake")
+# for now   include("${PROJECT_SOURCE_DIR}/cmake/MingwCrossEnv.cmake")
 endif(MSYS)
 
 
@@ -53,13 +53,16 @@ find_package(Qt4)
 include(${QT_USE_FILE})
 include_directories(${QT_INCLUDES})
 
+if (APPLE)
+option (USE_QTKIT "Build the QTKit encoder" OFF)
+endif()
 
-if(NOT MSYS)
+#if(NOT MSYS)
 	find_package(FFMPEG)
-else(NOT MSYS)
+#else(NOT MSYS)
     # Handled by MingwCrossEnv.cmake to avoid errors like:
     # libavformat.a(avisynth.o):avisynth.c:(.text+0x6b): undefined reference to `AVIStreamRelease@4'
-endif(NOT MSYS)
+#endif(NOT MSYS)
 # not here anymore
 #include_directories(${FFMPEG_INCLUDE_DIR})
 #include_directories("/usr/include/ffmpeg/")
@@ -74,7 +77,14 @@ include_directories(${OPENCV_INCLUDE_DIRS})
 
 ### Set up libraries ###
 if(MSYS)
-    set(EXTERNAL_LIBS ${FFMPEG_LIBRARIES} ${QT_LIBRARIES} ${OpenCV_LIBS_OPT} ${OpenCV_EXTRA_LIBS_OPT} ${ADDITIONAL_LIBS})
+    # should be in ffmpeg ?
+    #always pb at link ?
+    set( ADDITIONAL_LIBS ${ADDITIONAL_LIBS}  "ws2_32")
+    set( ADDITIONAL_LIBS ${ADDITIONAL_LIBS}  "z")
+    set( ADDITIONAL_LIBS ${ADDITIONAL_LIBS}  "iconv")
+# -lz -liconv" )
+    #set(EXTERNAL_LIBS ${QT_LIBRARIES} ${OpenCV_LIBS_OPT} ${OpenCV_EXTRA_LIBS_OPT} ${FFMPEG_LIBRARIES} ${ADDITIONAL_LIBS})
+    set(EXTERNAL_LIBS ${QT_LIBRARIES} ${OpenCV_LIBS} ${FFMPEG_LIBRARIES} ${ADDITIONAL_LIBS})
 else(MSYS)
     set(EXTERNAL_LIBS ${QT_LIBRARIES} ${OpenCV_LIBS} ${ADDITIONAL_LIBS} ${FFMPEG_LIBRARIES})
 endif(MSYS)
