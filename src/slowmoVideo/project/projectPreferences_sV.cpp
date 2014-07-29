@@ -76,6 +76,8 @@ QString& ProjectPreferences_sV::imagesFilenamePattern() { return m_imagesFilenam
 QString& ProjectPreferences_sV::videoFilename() { return m_videoFilename; }
 QString& ProjectPreferences_sV::videoCodec() { return m_vcodec; }
 
+QString& ProjectPreferences_sV::ffpreset() { return m_ffpreset; }
+
 float& ProjectPreferences_sV::flowV3DLambda() { return m_flowV3DLambda; }
 
 bool& ProjectPreferences_sV::renderFormat() { return m_renderFormat;};

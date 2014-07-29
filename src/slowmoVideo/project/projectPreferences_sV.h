@@ -33,6 +33,8 @@ public:
     QString& videoFilename();
     QString& videoCodec();
 
+	QString&  ffpreset();
+	
     float& flowV3DLambda();
 
 
@@ -59,7 +61,8 @@ private:
     QString m_imagesFilenamePattern;
     QString m_videoFilename;
     QString m_vcodec;
-
+	QString m_ffpreset;
+	
     float m_flowV3DLambda;
 
 

@@ -17,6 +17,8 @@ namespace Ui {
     class RenderingDialog;
 }
 
+#include <QFileInfo>
+ 
 class QButtonGroup;
 class RenderTask_sV;
 class Project_sV;
@@ -47,7 +49,9 @@ private:
     QButtonGroup *m_blurGroup;
 
     void fillTagLists();
-
+	QFileInfoList getPresetFileList();
+	void setup_presets();
+	
 private slots:
     void slotBrowseImagesDir();
     void slotBrowseVideoFile();

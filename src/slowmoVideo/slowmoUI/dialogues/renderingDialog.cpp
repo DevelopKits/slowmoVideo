@@ -32,6 +32,7 @@ the Free Software Foundation, either version 3 of the License, or
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QSettings> // TODO: better
+#include <QFileInfo>
 #include <QMessageBox>
 
 RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
@@ -112,7 +113,9 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
     ui->imagesFilenamePattern->setText(m_project->preferences()->imagesFilenamePattern());
     ui->videoOutputFile->setText(m_project->preferences()->videoFilename());
     ui->vcodec->setText(m_project->preferences()->videoCodec());
-
+	
+	setup_presets();
+	
     // FPS
     QString fps = QVariant(m_project->preferences()->renderFPS().fps()).toString();
     if (ui->cbFps->findText(fps) < 0 && fps.toFloat() > 0) {
@@ -192,6 +195,9 @@ RenderingDialog::~RenderingDialog()
     delete ui;
 }
 
+#pragma mark -
+#pragma mark rendertask
+
 RenderTask_sV* RenderingDialog::buildTask()
 {
     if (slotValidate()) {
@@ -248,6 +254,24 @@ RenderTask_sV* RenderingDialog::buildTask()
 			}
 			renderTarget->setTargetFile(ui->videoOutputFile->text());
             renderTarget->setVcodec(ui->vcodec->text());
+            if (!use_qt) {
+            	// is there a preset ?
+            	int preset = ui->ffpreset->currentIndex();
+				if (preset != 0) {
+					// usually codec is witten in file name: <codec>-<description>.ffprest
+					// so find codec in preset and set it
+					QString codec=ui->ffpreset->itemText(preset);
+					QString vpre=ui->ffpreset->itemData(preset).toString();
+					codec = codec.left(codec.indexOf("-"));
+					
+					//vpre = vpre.right(vpre.length()-vpre.indexOf("-")-1);
+					//vpre = vpre.remove(".ffpreset", Qt::CaseInsensitive);
+					qDebug() << "preset will be use : " << codec << " name " << vpre;
+					//QString cmd = "-vcodec " + codec + "
+					// override textbox : (will need to be parse !)
+					renderTarget->setVcodec(codec);
+				}
+            }
 			task->setRenderTarget(renderTarget);
         } else {
             qDebug() << "Render target is neither images nor video. Not implemented?";
@@ -293,6 +317,10 @@ RenderTask_sV* RenderingDialog::buildTask()
     }
 }
 
+#pragma mark -
+#pragma mark tools
+
+
 void RenderingDialog::fillTagLists()
 {
     QList<Tag_sV> list;
@@ -311,6 +339,51 @@ void RenderingDialog::fillTagLists()
     }
     ui->cbEndTag->addItem(tr("<End>"), QVariant(m_project->nodes()->endTime()));
 }
+
+/**
+ * Get ffmpeg *.ffpreset file list
+ * On windows presets are stored in program directory
+ */
+QFileInfoList RenderingDialog::getPresetFileList()
+{
+    QDir ffpresetDir;
+    QFileInfoList ret;
+
+ 	QStringList paths;
+    
+    paths << QDir::currentPath()+"/ffmpeg-presets/";
+
+    
+  	paths
+          << "/usr/share/ffmpeg/"
+          << "/usr/local/share/ffmpeg/"
+          << "/usr/share/avconv"
+          ;
+
+    foreach (QString path, paths) {
+    	ffpresetDir.setPath(path);
+    	ffpresetDir=ffpresetDir.toNativeSeparators(ffpresetDir.absolutePath());
+		ret += ffpresetDir.entryInfoList(QStringList("*.ffpreset"),QDir::Files,QDir::Name);
+    }
+    
+    return ret;
+}
+ 
+/**
+ * fill the preset combobox for ffmpeg
+*/
+void RenderingDialog::setup_presets()
+{
+    QFileInfoList presetList=getPresetFileList();
+    ui->ffpreset->clear();
+    ui->ffpreset->addItem("none");
+    foreach (QFileInfo f, presetList) {
+        ui->ffpreset->addItem(f.baseName(), f.absoluteFilePath());
+    }
+}
+
+#pragma mark -
+#pragma mark slots commands
 
 void RenderingDialog::slotSaveSettings()
 {
@@ -360,6 +433,21 @@ void RenderingDialog::slotSaveSettings()
     m_project->preferences()->renderFPS() = fps;
     m_project->preferences()->renderTarget() = ui->radioImages->isChecked() ? "images" : "video";
 	m_project->preferences()->renderFormat() = use_qt;
+	
+	int preset = ui->ffpreset->currentIndex();
+	if (preset != 0) {
+		// usually codec is witten in file name: <codec>-<description>.ffprest
+        // so find codec in preset and set it
+        QString codec=ui->ffpreset->itemText(preset);
+        QString vpre=ui->ffpreset->itemData(preset).toString();
+        codec = codec.left(codec.indexOf("-"));
+        // override textbox :
+        m_project->preferences()->videoCodec() = codec;
+        //vpre = vpre.right(vpre.length()-vpre.indexOf("-")-1);
+        //vpre = vpre.remove(".ffpreset", Qt::CaseInsensitive);
+        qDebug() << "preset will be use : " << codec << " name " << vpre;
+        m_project->preferences()->ffpreset() = vpre;
+	}
 	
     accept();
 }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>719</width>
-    <height>544</height>
+    <height>633</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -747,14 +747,25 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_4">
                <item>
-                <widget class="QCheckBox" name="use_qt">
-                 <property name="text">
-                  <string>Use Quicktime</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
-                 </property>
-                </widget>
+                <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <item>
+                  <widget class="QLabel" name="label_15">
+                   <property name="text">
+                    <string>ffmpeg preset : </string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="ffpreset">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <layout class="QGridLayout" name="gridLayout_3">
@@ -769,6 +780,16 @@
                   <widget class="QLineEdit" name="vcodec"/>
                  </item>
                 </layout>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="use_qt">
+                 <property name="text">
+                  <string>Use Quicktime</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
