@@ -49,9 +49,7 @@ set(SRCS_MOC
 qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
 
 include_directories(${FFMPEG_INCLUDE_PATHS})
+#include_directories(${OpenCV_INCLUDE_DIRS})
 add_library(sVproj STATIC ${SRCS_PROJ} ${MOC_OUT})
-qt_use_modules(sVproj Core)
-qt_use_modules(sVproj Gui)
-qt_use_modules(sVproj Xml)
-qt_use_modules(sVproj Script)
+qt_use_modules(sVproj Core Gui Xml Script)
 target_link_libraries(sVproj sV sVinfo sVflow sVencode ${EXTERNAL_LIBS})

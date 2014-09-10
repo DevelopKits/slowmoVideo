@@ -169,14 +169,15 @@ Categories=Qt;AudioVideo;Video;\n")
 )
 endif()
 
-if (APPLE OR WIN32)
-       install(TARGETS slowmoUI DESTINATION ".")
-       include(DeployQt4) # 2.8.7 or later
-       set( PLUGINS qjpeg;qtiff )
+install(TARGETS slowmoUI DESTINATION ".")
+include(DeployQt4) # 2.8.7 or later
+#install(TARGETS slowmoUI DESTINATION ${DEST})
+set( PLUGINS qjpeg;qtiff )
+if (APPLE)
        install_qt4_executable(slowmoUI.app "${PLUGINS}"  )
+elseif(WIN32)
+       install_qt4_executable(slowmoUI.exe "${PLUGINS}"  )
 else()
-	install(TARGETS slowmoUI DESTINATION ${DEST})
-       include(DeployQt4)
-       install_qt4_executable(${DEST}/slowmoUI.exe "qjpeg"  )
+       install_qt4_executable(slowmoUI "${PLUGINS}"  )
 endif()
 

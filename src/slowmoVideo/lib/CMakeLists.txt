@@ -81,23 +81,19 @@ message(STATUS "FFMPEG libraries are at ${FFMPEG_LIBRARIES}")
 include_directories(${FFMPEG_INCLUDE_PATHS})
 add_library(sV  STATIC ${LIB_SRC_BASE})
 target_link_libraries(sV  ${QT_LIBRARIES})
-qt_use_modules(sV Core)
-qt_use_modules(sV Gui)
+qt_use_modules(sV Core Gui)
 
 add_library(sVinfo  STATIC ${LIB_SRC_VIDEO})
-qt_use_modules(sVinfo Core)
-qt_use_modules(sVinfo Gui)
+qt_use_modules(sVinfo Core Gui)
 target_link_libraries(sVinfo  ${FFMPEG_LIBRARIES})
 
 add_library(sVencode  STATIC ${LIB_SRC_ENCODE} ${MOC_OUT})
 target_link_libraries(sVencode  ${FFMPEG_LIBRARIES})
-qt_use_modules(sVencode Core)
-qt_use_modules(sVencode Gui)
+qt_use_modules(sVencode Core Gui)
 
 add_library(sVflow  STATIC ${LIB_SRC_FLOW})
 
 add_library(sVvis  STATIC ${LIB_SRC_FLOWVIS})
-qt_use_modules(sVvis Core)
-qt_use_modules(sVvis Gui)
+qt_use_modules(sVvis Core Gui)
 target_link_libraries(sVvis  sVflow ${QT_LIBRARIES})
 
