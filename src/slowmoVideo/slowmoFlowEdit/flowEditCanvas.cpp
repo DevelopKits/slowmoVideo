@@ -18,7 +18,7 @@ the Free Software Foundation, either version 3 of the License, or
 #include <QtCore>
 #include <QObject>
 #include <QtCore/QDebug>
-#include <QtWidgets>
+//#include <QtWidgets>
 
 FlowEditCanvas::FlowEditCanvas(QWidget *parent) :
     QWidget(parent),

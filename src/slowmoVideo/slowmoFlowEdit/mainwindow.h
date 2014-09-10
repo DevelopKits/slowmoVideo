@@ -18,7 +18,7 @@ namespace Ui {
 
 
 #include <QMainWindow>
-#include <QtWidgets>
+//#include <QtWidgets>
 #include <QSettings>
 
 #include "../libgui/combinedShortcuts.h"

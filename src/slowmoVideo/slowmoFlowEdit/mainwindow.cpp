@@ -15,7 +15,7 @@ the Free Software Foundation, either version 3 of the License, or
 #include <QtCore>
 #include <QObject>
 #include <QMainWindow>
-#include <QtWidgets>
+//#include <QtWidgets>
 #include <QSettings>
 
 #include <QtCore/QDebug>

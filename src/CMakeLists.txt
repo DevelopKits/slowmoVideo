@@ -19,7 +19,7 @@ if (APPLE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2 -mtune=corei7")
 else()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g  -fno-keep-inline-dllexport ")
 endif()
 
 if(CMAKE_TOOLCHAIN_FILE)
@@ -137,7 +137,7 @@ message("Qt libraries found at : ${Qt5Gui_LIBRARIES} /  ${QT_LIBRARIES}" )
 set (USE_QTKIT ON CACHE BOOL "Build with the QTKit encoder")
 set (USE_FFMPEG ON CACHE BOOL "Build with the FFMPEG encoder")
 
-#if(NOT MSYS)
+#if(NOT MSYS) 
 	find_package(FFMPEG)
 #else(NOT MSYS)
     # Handled by MingwCrossEnv.cmake to avoid errors like:
@@ -221,9 +221,9 @@ endif(ENABLE_TESTS)
 
 ##### V3D START #####
 
-if(WIN32)
-set(GLUT_ROOT_PATH ${PROJECT_SOURCE_DIR}/libs/)
-endif(WIN32)
+#if(WIN32)
+#set(GLUT_ROOT_PATH ${PROJECT_SOURCE_DIR}/libs/)
+#endif(WIN32)
 
 find_package(OpenGL)
 find_package(GLEW)
