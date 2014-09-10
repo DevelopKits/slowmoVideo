@@ -2,8 +2,6 @@
 # http://www.itk.org/pipermail/insight-users/2007-November/024141.html
 # http://www.linux-magazin.de/Heft-Abo/Ausgaben/2007/02/Mal-ausspannen
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-
 set(LIB_SRC_BASE
   defs_sV.cpp
   defs_sV.hpp
@@ -17,7 +15,7 @@ set(LIB_SRC_BASE
 
 set(LIB_SRC_VIDEO
   defs_sV.h
-  videoInfo_sV.c
+  videoInfo_sV.cpp
   avconvInfo_sV.cpp
 )
 
@@ -47,10 +45,22 @@ set(LIB_SRC_ENCODE
   macros_sV.h
   video_enc.h
   ffmpeg_writer.h
-  ffmpegEncode_sV.c
   ffmpeg_writer.cpp
   video_enc.cpp
 )
+
+set(SRCS_MOC
+  ffmpeg_writer.h
+)
+
+qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
+
+if (OLD_FFMPEG)
+set(LIB_SRC_ENCODE
+	${LIB_SRC_ENCODE}
+	  ffmpegEncode_sV.c
+)
+endif()
 
 if (APPLE AND USE_QTKIT)
 set(LIB_SRC_ENCODE
@@ -59,6 +69,12 @@ set(LIB_SRC_ENCODE
 	qtkit.mm
 )
 endif()
+
+set(SRCS_MOC
+	ffmpeg_writer.h	
+)
+
+qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
 
 message(STATUS "FFMPEG libraries are at ${FFMPEG_LIBRARIES}")
 
@@ -73,7 +89,7 @@ qt_use_modules(sVinfo Core)
 qt_use_modules(sVinfo Gui)
 target_link_libraries(sVinfo  ${FFMPEG_LIBRARIES})
 
-add_library(sVencode  STATIC ${LIB_SRC_ENCODE})
+add_library(sVencode  STATIC ${LIB_SRC_ENCODE} ${MOC_OUT})
 target_link_libraries(sVencode  ${FFMPEG_LIBRARIES})
 qt_use_modules(sVencode Core)
 qt_use_modules(sVencode Gui)

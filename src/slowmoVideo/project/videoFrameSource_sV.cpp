@@ -31,8 +31,9 @@ throw(FrameSourceError) :
     }
 
     m_videoInfo = new VideoInfoSV();
-
+    // use copy constructor 
     *m_videoInfo = getInfo(filename.toStdString().c_str());
+
     if (m_videoInfo->streamsCount <= 0) {
         qDebug() << "Video info is invalid: " << filename;
         throw FrameSourceError(tr("Video is invalid, no streams found in %1").arg(filename));
@@ -47,7 +48,7 @@ throw(FrameSourceError) :
     m_ffmpeg = new QProcess(this);
     m_timer = new QTimer(this);
 
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(slotProgressUpdate()));
+    QObject::connect(m_timer, SIGNAL(timeout()), this, SLOT(slotProgressUpdate()));
 }
 VideoFrameSource_sV::~VideoFrameSource_sV()
 {
@@ -173,7 +174,9 @@ bool VideoFrameSource_sV::rebuildRequired(const FrameSize frameSize)
     QImage frame = frameAt(0, frameSize);
     needsRebuild |= frame.isNull();
 
-    frame = frameAt(m_videoInfo->framesCount-1, frameSize);
+    //qDebug() << "last frame to check " << m_videoInfo->framesCount-1;
+    // rewind a little bit to account rounding error...
+    frame = frameAt(m_videoInfo->framesCount-10, frameSize);
     needsRebuild |= frame.isNull();
 
     return needsRebuild;

@@ -1,9 +1,19 @@
 /*
  * class to export a movie using QuickTime
  */
+#include <QtCore/QCoreApplication>
+#include <QDebug>
+#include <QtCore/QSettings>
+#include <QImage>
 
 #include "qtkit.h"
 #include "video_enc.h"
+
+
+#include "../project/renderTask_sV.h"
+
+#pragma mark - 
+#pragma mark cocoa bridge
 
 // tools for qt 4.8
 // convert pixamp <-> nsimage
@@ -62,6 +72,8 @@ NSImage *toNSImage(const QImage& InImage)
 
 // end of tools
 
+
+#pragma mark -
 
 /* TODO :
  "-fps: Frames per second for final movie can be anywhere between 0.1 and 60.0.\n"
@@ -191,6 +203,59 @@ int VideoQT::writeFrame(const QImage& frame)
     return 0;
 }
 
+#pragma mark - 
+
+int VideoQT::exportFrames(QString filepattern,int first,RenderTask_sV *progress)
+{
+	NSAutoreleasePool* localpool = [[NSAutoreleasePool alloc] init];
+	NSString *inputPath;
+    NSArray *imageFiles;
+    NSError *err;
+    NSImage *image;
+    
+    NSString *fullFilename;
+        
+	qDebug() << "exporting frame from : " << filepattern << " to " << destPath;
+	NSLog(@"export to @%", destPath);
+	
+	NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString* inputdir = [[NSURL fileURLWithPath:[[NSString stringWithUTF8String:filepattern.toStdString().c_str()]
+                    stringByExpandingTildeInPath]] path];
+    inputPath = [inputdir  stringByDeletingLastPathComponent];
+                
+    imageFiles = [fileManager contentsOfDirectoryAtPath:inputPath error:&err];
+    imageFiles = [imageFiles sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
+    
+     for (NSString *file in imageFiles) {
+        fullFilename = [inputPath stringByAppendingPathComponent:file];
+        if ([[fullFilename pathExtension] caseInsensitiveCompare:@"jpeg"] == NSOrderedSame ||
+            [[fullFilename pathExtension] caseInsensitiveCompare:@"png"] == NSOrderedSame ||
+            [[fullFilename pathExtension] caseInsensitiveCompare:@"jpg"] == NSOrderedSame) {
+            NSAutoreleasePool *innerPool = [[NSAutoreleasePool alloc] init];
+            image = [[NSImage alloc] initWithContentsOfFile:fullFilename];
+        
+        	//NSLog(@"adding %@",fullFilename);
+        	
+        	[mMovie addImage:image
+       			 forDuration:duration
+     			  withAttributes:imageAttributes];
+    
+    		if (![mMovie updateMovieFile]) {
+        			fprintf(stderr, "Didn't successfully update movie file. \n" );
+					return 1;
+			}
+			
+			// TODO:
+    		progress->stepProgress();
+            [image release];
+            [innerPool release];
+        }
+    }
+    
+    [localpool drain];
+    return 0;
+}
+
 //
 // close the movie file
 VideoQT::~VideoQT()
@@ -205,7 +270,10 @@ VideoQT::~VideoQT()
     [localpool drain];
 }
 
-VideoWriter* CreateVideoWriter_QT ( const char* filename, int width, int height, double fps)
+#pragma mark -  
+#pragma mark C/C++ bridge
+
+VideoWriter* CreateVideoWriter_QT ( const char* filename, int width, int height, double fps,const char* codec)
 {
 	VideoQT*  driver=  new VideoQT(width,height,fps,0,0,filename);
 	return driver;

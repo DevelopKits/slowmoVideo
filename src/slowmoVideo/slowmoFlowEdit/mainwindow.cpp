@@ -15,12 +15,14 @@ the Free Software Foundation, either version 3 of the License, or
 #include <QtCore>
 #include <QObject>
 #include <QMainWindow>
-//#include <QtWidgets>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#include <QtWidgets>
+#endif
 #include <QSettings>
 
 #include <QtCore/QDebug>
-#include <QtGui/QFileDialog>
-#include <QtGui/QMessageBox>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "flowEditCanvas.h"
 #include "shortcutListDialog.h"

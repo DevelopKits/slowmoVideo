@@ -65,14 +65,16 @@ void check_gpu()
         }
 
         ocl::DevicesInfo devInfo;
+#if 0
         int res = cv::ocl::getOpenCLDevices(devInfo,ocl::CVCL_DEVICE_TYPE_ALL);
+#else
+        int res = cv::ocl::getOpenCLDevices(devInfo,ocl::CVCL_DEVICE_TYPE_GPU);
+#endif
         if (res != 0) {
         for(size_t i = 0 ; i < devInfo.size() ;i++) {
             std::cerr << "Device : " << i << " " << devInfo[i]->deviceName << " is present" << std::endl;
         }
-
-       //ocl::getOpenCLDevices(DevicesInfo& devices, int deviceType = CVCL_DEVICE_TYPE_GPU,
-        //        const PlatformInfo* platform = NULL);
+            
 
 		}
         qDebug() << "end OpenCL support";
@@ -129,12 +131,16 @@ FlowSourceOpenCV_sV::FlowSourceOpenCV_sV(Project_sV *project) :
 	// for debugging OpenCL support
     check_gpu();
     use_gpu = 0; // default do not use GPU
-    
+    method = 0; // default to Farnback
     createDirectories();
 }
 
 void FlowSourceOpenCV_sV::initGPUDevice(int dev)
 {
+   if (dev == -1) {
+	qDebug() << "bad OCL device : " << dev << "for rendering not using it !";
+	use_gpu = 0;
+   } else {
 	qDebug() << "using OCL device : " << dev << "for rendering";
 	use_gpu = 1;
 	ocl::PlatformsInfo platforms;
@@ -145,6 +151,12 @@ void FlowSourceOpenCV_sV::initGPUDevice(int dev)
       
     ocl::setDevice(devInfo[dev]);
     std::cerr << "Device : " << dev << " is " << devInfo[dev]->deviceName << std::endl;
+  }
+}
+     
+void FlowSourceOpenCV_sV::chooseAlgo(int algo) {
+	qDebug() << "using Optical Flow Algo : " << algo;
+    method = algo;
 }
         		
 void FlowSourceOpenCV_sV::slotUpdateProjectDir()
@@ -171,7 +183,8 @@ void drawOptFlowMap(const Mat& flow, std::string flowname )
 
   FlowField_sV flowField(flow.cols, flow.rows);
 
-    for(int y = 0; y < flow.rows; y++)
+	//qDebug() << "flow is : " << flow.cols << " by " << flow.rows;
+  for(int y = 0; y < flow.rows; y++)
         for(int x = 0; x < flow.cols; x++) {
             const Point2f& fxyo = flow.at<Point2f>(y, x);
 
@@ -229,33 +242,15 @@ void FlowSourceOpenCV_sV::setupOpticalFlow(const int levels,const int winsize,co
     
     farn.numLevels = levels;
     farn.winSize = winsize;
+    
+    //const int iterations = 8; // 10
+    farn.numIters = 8;
 }
 
-#if 0
-// use case of OCL    
-    cv::ocl::oclMat d_flowx, d_flowy;
-    farn(oclMat(frame0), oclMat(frame1), d_flowx, d_flowy);
-
-    cv::Mat flow;
-    if (useInitFlow)
-    {
-        cv::Mat flowxy[] = {cv::Mat(d_flowx), cv::Mat(d_flowy)};
-        cv::merge(flowxy, 2, flow);
-
-        farn.flags |= cv::OPTFLOW_USE_INITIAL_FLOW;
-        farn(oclMat(frame0), oclMat(frame1), d_flowx, d_flowy);
-    }
-
-    cv::calcOpticalFlowFarneback(
-        frame0, frame1, flow, farn.pyrScale, farn.numLevels, farn.winSize,
-        farn.numIters, farn.polyN, farn.polySigma, farn.flags);
-
-    std::vector<cv::Mat> flowxy;
-    cv::split(flow, flowxy);
+void FlowSourceOpenCV_sV::setupTVL(double thau,double lambda, double pyrScale, double warp)
+{
 
 }
-
-#endif
 
 FlowField_sV* FlowSourceOpenCV_sV::buildFlow(uint leftFrame, uint rightFrame, FrameSize frameSize) throw(FlowBuildingError)
 {
@@ -267,7 +262,8 @@ FlowField_sV* FlowSourceOpenCV_sV::buildFlow(uint leftFrame, uint rightFrame, Fr
         QTime time;
         time.start();
         
-        Mat prevgray, gray, flow;
+        Mat prevgray, gray;
+        Mat_<Point2f> flow;
         QString prevpath = project()->frameSource()->framePath(leftFrame, frameSize);
         QString path = project()->frameSource()->framePath(rightFrame, frameSize);
         //        namedWindow("flow", 1);
@@ -279,33 +275,56 @@ FlowField_sV* FlowSourceOpenCV_sV::buildFlow(uint leftFrame, uint rightFrame, Fr
         
         //cvtColor(l1, prevgray, CV_BGR2GRAY);
         //cvtColor(l2, gray, CV_BGR2GRAY);
-        if (use_gpu) {
-        	qDebug() << "using GPU OCL version";
-        }
+        
         
         {
-             const int iterations = 8; // 10
+            //const int iterations = 8; // 10
             //done outside setupOpticalFlow(3,15,1.2,0.5,5);
             
             if( prevgray.data ) {
                 
-                calcOpticalFlowFarneback(
-                                         prevgray, gray,
-                                         //gray, prevgray,  // TBD this seems to match V3D output better but a sign flip could also do that
-                                         flow,
-                                         farn.pyrScale, //0.5,
-                                         farn.numLevels, //3,
-                                         farn.winSize, //15,
-                                         iterations, //3,
-                                         farn.polyN, //5,
-                                         farn.polySigma, //1.2,
-                                         farn.flags //0
-                                         );
-                //cvtColor(prevgray, cflow, CV_GRAY2BGR);
-                //drawOptFlowMap(flow, cflow, 16, 1.5, CV_RGB(0, 255, 0));
+                if (use_gpu) {
+        			qDebug() << "using GPU OCL version";
+        			
+        			cv::ocl::oclMat d_flowx, d_flowy;
+    				farn(ocl::oclMat(prevgray), ocl::oclMat(gray), d_flowx, d_flowy);
+                    
+    				cv::Mat flowxy[] = {cv::Mat(d_flowx), cv::Mat(d_flowy)};
+    				cv::merge(flowxy, 2, flow);
+    				
+        		} else {
+                    if (method) { // DualTVL1
+                        qDebug() << "calcOpticalFlowDual_TVL1";
+                        // TODO: put this as instance variable
+                        Ptr<DenseOpticalFlow> tvl1 = createOptFlow_DualTVL1();
+                        //setupTVL(0.25,0.15, 5, 10);
+                        // default are 0.25 0.15 5 5
+                        //tlv1_->set("tau", tau_);
+                        //tvl1->set("lambda",0.05);
+                        //alg_->set("lambda", lambda_);
+                        //alg_->set("nscales", nscales_);
+                        //alg_->set("warps", warps_);
+                        tvl1->calc(prevgray, gray, flow);
+
+                    } else { // _FARN_
+                        qDebug() << "calcOpticalFlowFarneback";
+                        // TODO: check to use prev flow as initial flow ? (flags)
+                        calcOpticalFlowFarneback(
+                                                 prevgray, gray,
+                                                 //gray, prevgray,  // TBD this seems to match V3D output better but a sign flip could also do that
+                                                 flow,
+                                                 farn.pyrScale, //0.5,
+                                                 farn.numLevels, //3,
+                                                 farn.winSize, //15,
+                                                 farn.numIters, //3,
+                                                 farn.polyN, //5,
+                                                 farn.polySigma, //1.2,
+                                                 farn.flags //0
+                                                 );
+                    }
+                    
+                }
                 drawOptFlowMap(flow, flowFileName.toStdString());
-                //imshow("flow", cflow);
-                //imwrite(argv[4],cflow);
             } else {
                 qDebug() << "imread: Could not read image " << prevpath;
                 throw FlowBuildingError(QString("imread: Could not read image " + prevpath));

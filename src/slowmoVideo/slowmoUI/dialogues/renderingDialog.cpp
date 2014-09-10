@@ -18,8 +18,13 @@ the Free Software Foundation, either version 3 of the License, or
 #include "project/projectPreferences_sV.h"
 #include "project/renderTask_sV.h"
 #include "project/imagesRenderTarget_sV.h"
+#include "project/abstractFlowSource_sV.h"
 #ifdef USE_FFMPEG
+#if 0
 #include "project/new_videoRenderTarget.h"
+#else
+#include "project/exportVideoRenderTarget.h"
+#endif
 #else
 #include "project/videoRenderTarget_sV.h"
 #endif
@@ -28,6 +33,7 @@ the Free Software Foundation, either version 3 of the License, or
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QSettings> // TODO: better
+#include <QMessageBox>
 
 RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
     QDialog(parent),
@@ -126,6 +132,8 @@ RenderingDialog::RenderingDialog(Project_sV *project, QWidget *parent) :
     ui->cbInterpolation->addItem(toString(InterpolationType_Twoway), QVariant(InterpolationType_Twoway));
     ui->cbInterpolation->addItem(toString(InterpolationType_TwowayNew), QVariant(InterpolationType_TwowayNew));
     ui->cbInterpolation->addItem(toString(InterpolationType_Bezier), QVariant(InterpolationType_Bezier));
+    ui->cbInterpolation->addItem(toString(InterpolationType_None), QVariant(InterpolationType_None));
+    ui->cbInterpolation->addItem(toString(InterpolationType_Nearest), QVariant(InterpolationType_Nearest));
     if (ui->cbInterpolation->findData(QVariant(m_project->preferences()->renderInterpolationType())) >= 0) {
         ui->cbInterpolation->setCurrentIndex(ui->cbInterpolation->findData(QVariant(m_project->preferences()->renderInterpolationType())));
     }
@@ -212,11 +220,35 @@ RenderTask_sV* RenderingDialog::buildTask()
         } else if (ui->radioVideo->isChecked()) {
 	#ifdef USE_FFMPEG
 	#warning "using QTKit version"
+#if 0
             newVideoRenderTarget *renderTarget = new newVideoRenderTarget(task);
+#else
+	#warning "using fork version"
+            exportVideoRenderTarget *renderTarget = new exportVideoRenderTarget(task);
+#endif
+			const bool use_qt = ui->use_qt->isChecked();
+			if (!use_qt) {
+				qDebug() << "using classical FFMPEG";
+				renderTarget->setQT(0);
+			}
     #else
 	#warning "should not use this"
             VideoRenderTarget_sV *renderTarget = new VideoRenderTarget_sV(task);
 	#endif
+			// check if file exist
+			QFile filetest(ui->videoOutputFile->text());
+			if (filetest.exists()) {
+				int r = QMessageBox::warning(this, tr("slowmoUI"),
+                        tr("The file already exist.\n"
+                           "Do you want to overwrite it ?"),
+                        QMessageBox::Yes | QMessageBox::No);
+                if (r == QMessageBox::Yes) {
+            		filetest.remove();
+        		} else {
+        			//TODO:  maybe should delete task ?
+            		return 0;
+        		}				
+			}
 			renderTarget->setTargetFile(ui->videoOutputFile->text());
             renderTarget->setVcodec(ui->vcodec->text());
 			task->setRenderTarget(renderTarget);
@@ -258,6 +290,10 @@ RenderTask_sV* RenderingDialog::buildTask()
             qDebug() << "No section mode selected?";
             Q_ASSERT(false);
         }
+
+        // set optical flow parameters
+        AbstractFlowSource_sV *flow_algo = m_project->flowSource();
+        flow_algo->setLambda(prefs->flowV3DLambda());
         return task;
     } else {
         return NULL;

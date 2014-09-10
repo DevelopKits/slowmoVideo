@@ -97,6 +97,13 @@ void Project_sV::init()
     m_renderTask = NULL;
 
     m_v3dFailCounter = 0;
+
+    /* better here ? */
+    int tid;
+    for(tid=0;tid<4;tid++) {
+    	worker[tid]=0;
+    	thread[tid]=0;    
+    }
 }
 
 Project_sV::~Project_sV()
@@ -147,6 +154,9 @@ void Project_sV::reloadFlowSource()
         		//qDebug() << "using OCL device : " << dev << "for rendering";
         		ocv->initGPUDevice(dev);
         	}
+        } else {
+            int algo = m_settings.value("preferences/oclAlgo", 0).toInt();
+            ocv->chooseAlgo(algo);
         }
         qDebug() << "initial OpenCV setup";
         ocv->setupOpticalFlow(3,15,1.2,0.5,5);

@@ -11,10 +11,11 @@ the Free Software Foundation, either version 3 of the License, or
 #include "imageDisplay.h"
 #include <QtCore/QDebug>
 #include <QtGui/QPainter>
-#include <QtGui/QMenu>
-#include <QtGui/QFileDialog>
-#include <QtGui/QContextMenuEvent>
+#include <QMenu>
+#include <QFileDialog>
+#include <QContextMenuEvent>
 
+#include <QAction>
 #include <QApplication>
 #include <QtCore/QSettings>
 #include <QtCore/QFileInfo>
@@ -35,6 +36,10 @@ ImageDisplay::ImageDisplay(QWidget *parent, Qt::WindowFlags f) :
     connect(m_aExportImage, SIGNAL(triggered()), this, SLOT(slotExportImage()));
 
     setContentsMargins(5, 5, 5, 5);
+
+    m_states.mouseInitialImagePos = QPointF(0.0,0.0);
+    m_states.mousePrevPos = QPoint(0,0);
+    m_states.manhattan = 0;
 }
 ImageDisplay::~ImageDisplay()
 {
@@ -119,6 +124,9 @@ void ImageDisplay::mousePressEvent(QMouseEvent *e)
     m_states.mouseInitialImagePos = convertCanvasToImage(e->pos());
     m_states.mousePrevPos = e->pos();
     m_states.manhattan = 0;
+
+    QPointF pos = convertCanvasToImage(e->pos());
+    emit signalMousePressed(pos.x(), pos.y());
 }
 
 void ImageDisplay::mouseMoveEvent(QMouseEvent *e)

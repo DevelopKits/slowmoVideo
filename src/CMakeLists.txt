@@ -43,6 +43,13 @@ set(CMAKE_MODULE_PATH
   ${slowmoVideo_SOURCE_DIR}/cmake
 )
 
+# Check if environment variable QTDIR is set.
+# needed for Qt5
+# Extra security for windows environment as well.
+if (DEFINED ENV{QTDIR})
+    set(CMAKE_PREFIX_PATH $ENV{QTDIR} ${CMAKE_PREFIX_PATH})
+endif ()
+
 set(DEST "bin")
 
 include(cmake/macros.cmake)
@@ -136,6 +143,7 @@ message("Qt libraries found at : ${Qt5Gui_LIBRARIES} /  ${QT_LIBRARIES}" )
 
 set (USE_QTKIT ON CACHE BOOL "Build with the QTKit encoder")
 set (USE_FFMPEG ON CACHE BOOL "Build with the FFMPEG encoder")
+set (USE_DBUS OFF CACHE BOOL "Build with the DBUS notification support")
 
 #if(NOT MSYS) 
 	find_package(FFMPEG)

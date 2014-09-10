@@ -8,6 +8,25 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 */
 
+#include <QtCore>
+#include <QObject>
+#include <QDockWidget>
+#include <QDebug>
+#include <QMessageBox>
+#include <QStatusBar>
+
+#include <QDir>
+#include <QFileDialog>
+
+#include <QShortcut>
+#include <QSignalMapper>
+#include <QTime>
+#include <QFuture>
+
+#include <QPainter>
+
+#include <functional>
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -27,24 +46,7 @@ the Free Software Foundation, either version 3 of the License, or
 // for editing optical flow
 #include "flowEditCanvas.h"
 
-#include <QtCore>
-#include <QObject>
-#include <QDockWidget>
-#include <QDebug>
-#include <QMessageBox>
-#include <QtGui/QStatusBar>
 
-#include <QDir>
-#include <QFileDialog>
-
-#include <QShortcut>
-#include <QSignalMapper>
-#include <QTime>
-#include <QFuture>
-
-#include <QPainter>
-
-#include <functional>
 
 MainWindow::MainWindow(QString projectPath, QWidget *parent) :
     QMainWindow(parent),
@@ -108,12 +110,9 @@ MainWindow::MainWindow(QString projectPath, QWidget *parent) :
         }
     }
 
-
-
-
-    ui->actionNew->setShortcut(QKeySequence("Ctrl+N"));
-    ui->actionOpen->setShortcut(QKeySequence("Ctrl+O"));
-    ui->actionSave->setShortcut(QKeySequence("Ctrl+S"));
+    ui->actionNew->setShortcut(QKeySequence(QKeySequence::New));
+    ui->actionOpen->setShortcut(QKeySequence(QKeySequence::Open));
+    ui->actionSave->setShortcut(QKeySequence(QKeySequence::Save));
     ui->actionSave_as->setShortcut(QKeySequence("Shift+Ctrl+S"));
     ui->actionShortcuts->setShortcut(QKeySequence("Ctrl+H"));
     ui->actionRender->setShortcut(QKeySequence("Ctrl+R"));
@@ -121,9 +120,9 @@ MainWindow::MainWindow(QString projectPath, QWidget *parent) :
     ui->actionExamineFlow->setShortcut(QKeySequence("Shift+Ctrl+X"));
     ui->actionPreferences->setShortcut(QKeySequence("Ctrl+,"));
     ui->actionAbout->setShortcut(QKeySequence("F1"));
-    ui->actionQuit->setShortcut(QKeySequence("Ctrl+Q"));
-    ui->actionZoomIn->setShortcut(QKeySequence("+"));
-    ui->actionZoomOut->setShortcut(QKeySequence("-"));
+    ui->actionQuit->setShortcut(QKeySequence(QKeySequence::Quit));
+    ui->actionZoomIn->setShortcut(QKeySequence(QKeySequence::ZoomIn));
+    ui->actionZoomOut->setShortcut(QKeySequence(QKeySequence::ZoomOut));
 
     m_cs.addShortcut("h", Help, tr("Show help overlay"));
     m_cs.addShortcut("q-q", Quit, tr("Quit"));
@@ -173,7 +172,7 @@ MainWindow::MainWindow(QString projectPath, QWidget *parent) :
     setWindowIcon(QIcon(":icons/slowmoIcon.png"));
 
     QSettings settings;
-    bool show = settings.value("ui/displayHelp", true).toBool();
+    bool show = settings.value("ui/displayHelp", false).toBool();
     m_wCanvas->showHelp(show);
     settings.sync();
 
@@ -197,6 +196,10 @@ MainWindow::~MainWindow()
         delete m_project;
     }
 
+	// shoudl check task ?
+	m_rendererThread.quit();
+	m_rendererThread.wait();
+	
     if (m_progressDialog != NULL) {
         delete m_progressDialog;
     }
@@ -415,7 +418,7 @@ void MainWindow::slotSaveProject(QString filename)
 {
     if (filename.length() == 0) {
         filename = m_project->projectFilename();
-    }
+    }	
     if (filename.length() == 0) {
         qDebug() << "No filename given, won't save. (Perhaps an empty project?)";
         statusBar()->showMessage(tr("No filename given, won't save. (Perhaps an empty project?)"), 5000);
@@ -425,6 +428,7 @@ void MainWindow::slotSaveProject(QString filename)
             XmlProjectRW_sV writer;
             writer.saveProject(m_project, filename);
             statusBar()->showMessage(QString(tr("Saved project as: %1")).arg(filename));
+            setWindowModified(false);
         } catch (Error_sV &err) {
             QMessageBox(QMessageBox::Warning, tr("Error writing project file"), err.message()).exec();
         }
@@ -566,40 +570,53 @@ void MainWindow::slotShowRenderDialog()
 {
     RenderingDialog renderingDialog(m_project, this);
     if (renderingDialog.exec() == QDialog::Accepted) {
-
+        
         RenderTask_sV *task = renderingDialog.buildTask();
-        task->moveToThread(&m_rendererThread);
-
-        if (m_project->renderTask() != NULL) {
-            disconnect(SIGNAL(signalRendererContinue()), m_project->renderTask());
+        if (task != 0) {
+            task->moveToThread(&m_rendererThread);
+            
+            if (m_project->renderTask() != NULL) {
+                disconnect(SIGNAL(signalRendererContinue()), m_project->renderTask());
+            }
+            m_project->replaceRenderTask(task);
+            
+            if (m_renderProgressDialog == NULL) {
+                m_renderProgressDialog = new ProgressDialog(this);
+                m_renderProgressDialog->setWindowTitle(tr("Rendering progress"));
+            } else {
+                m_renderProgressDialog->disconnect();
+            }
+            
+            connect(task, SIGNAL(signalNewTask(QString,int)), m_renderProgressDialog, SLOT(slotNextTask(QString,int)));
+            connect(task, SIGNAL(signalItemDesc(QString)), m_renderProgressDialog, SLOT(slotTaskItemDescription(QString)));
+            connect(task, SIGNAL(signalTaskProgress(int)), m_renderProgressDialog, SLOT(slotTaskProgress(int)));
+            connect(task, SIGNAL(signalRenderingFinished(QString)), m_renderProgressDialog, SLOT(slotAllTasksFinished(QString)));
+            connect(task, SIGNAL(signalRenderingAborted(QString)), this, SLOT(slotRenderingAborted(QString)));
+            connect(task, SIGNAL(signalRenderingAborted(QString)), m_renderProgressDialog, SLOT(close()));
+            connect(task, SIGNAL(signalRenderingStopped(QString)), m_renderProgressDialog, SLOT(slotAborted(QString)));
+            connect(m_renderProgressDialog, SIGNAL(signalAbortTask()), task, SLOT(slotStopRendering()));
+            //connect(this, SIGNAL(signalRendererContinue()), task, SLOT(slotContinueRendering()), Qt::UniqueConnection);
+            
+            connect(task, SIGNAL(workFlowRequested()), &m_rendererThread, SLOT(start()));
+            connect(&m_rendererThread, SIGNAL(started()), task, SLOT(slotContinueRendering()));
+            //TODO: connect(task, SIGNAL(finished()), m_rendererThread, SLOT(quit()), Qt::DirectConnection);
+            //connect(task, SIGNAL(finished()), task, SLOT(deleteLater()));
+            //connect(&m_rendererThread, &QThread::finished, task, &QObject::deleteLater);
+            // let's start
+            m_rendererThread.wait(); // If the thread is not running, this will immediately return.
+            
+            m_renderProgressDialog->show();
+            
+            //emit signalRendererContinue();
+            //m_rendererThread.exec ();
+            task->requestWork();
+            m_rendererThread.start();
         }
-        m_project->replaceRenderTask(task);
-
-
-        if (m_renderProgressDialog == NULL) {
-            m_renderProgressDialog = new ProgressDialog(this);
-            m_renderProgressDialog->setWindowTitle(tr("Rendering progress"));
-        } else {
-            m_renderProgressDialog->disconnect();
-        }
-
-        connect(task, SIGNAL(signalNewTask(QString,int)), m_renderProgressDialog, SLOT(slotNextTask(QString,int)));
-        connect(task, SIGNAL(signalItemDesc(QString)), m_renderProgressDialog, SLOT(slotTaskItemDescription(QString)));
-        connect(task, SIGNAL(signalTaskProgress(int)), m_renderProgressDialog, SLOT(slotTaskProgress(int)));
-        connect(task, SIGNAL(signalRenderingFinished(QString)), m_renderProgressDialog, SLOT(slotAllTasksFinished(QString)));
-        connect(task, SIGNAL(signalRenderingAborted(QString)), this, SLOT(slotRenderingAborted(QString)));
-        connect(task, SIGNAL(signalRenderingAborted(QString)), m_renderProgressDialog, SLOT(close()));
-        connect(task, SIGNAL(signalRenderingStopped(QString)), m_renderProgressDialog, SLOT(slotAborted(QString)));
-        connect(m_renderProgressDialog, SIGNAL(signalAbortTask()), task, SLOT(slotStopRendering()));
-        connect(this, SIGNAL(signalRendererContinue()), task, SLOT(slotContinueRendering()), Qt::UniqueConnection);
-
-        m_renderProgressDialog->show();
-
-        emit signalRendererContinue();
-        m_rendererThread.start();
-
+    } else {
+    	QMessageBox(QMessageBox::Warning, tr("Aborted"), tr("Aborted by user"), QMessageBox::Ok).exec();
     }
 }
+
 void MainWindow::slotRenderingAborted(QString message)
 {
     QMessageBox(QMessageBox::Warning, tr("Error"), message, QMessageBox::Ok).exec();

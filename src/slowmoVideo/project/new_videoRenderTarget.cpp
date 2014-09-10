@@ -1,6 +1,6 @@
 /*
 This file is part of slowmoVideo.
-Copyright (C) 2011  Simon A. Eugster (Granjow)  <simon.eu@gmail.com>
+Copyright (C) 2014 Valery Brasseur <vbrasseur@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ void newVideoRenderTarget::openRenderTarget() throw(Error_sV)
     writer = CreateVideoWriter(m_filename.toStdString().c_str(),
     	renderTask()->resolution().width(),
     	renderTask()->resolution().height(),
-    	renderTask()->fps().fps(),1);
+    	renderTask()->fps().fps(),1, m_vcodec.toStdString().c_str());
     
    
     if (writer == 0) {

@@ -6,7 +6,7 @@
 #include "lib/avconvInfo_sV.h"
 #include "../../project/videoFrameSource_sV.h"
 #include <QtCore/QProcess>
-#include <QtGui/QFileDialog>
+#include <QFileDialog>
 
 //TODO: header ?
 int isOCLsupported();
@@ -55,6 +55,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) :
         ui->ocl_device->setCurrentIndex(dev);
     } else {
         	ui->methodOCV->setChecked(true);
+        // TODO: for testing
+        ui->oclAlgo->clear();
+        ui->oclAlgo->addItem(tr("Farnback"),QVariant(1));
+        ui->oclAlgo->addItem(tr("Dual TVL1"),QVariant(2));
+        int algo = m_settings.value("preferences/oclAlgo", 0).toInt();
+        ui->oclAlgo->setCurrentIndex(algo);
     }
 	
     // state of threading
@@ -102,6 +108,9 @@ void PreferencesDialog::accept()
         qDebug() << "driver choosen is : " << dev;
         m_settings.setValue("preferences/oclDriver", dev);
     }
+    int algo = ui->oclAlgo->currentIndex();
+    m_settings.setValue("preferences/oclAlgo",algo);
+    
     qDebug() << "saving method  : " << method;
     m_settings.setValue("preferences/flowMethod", method);
     
