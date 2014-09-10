@@ -121,6 +121,16 @@ qt_wrap_cpp(MOC_OUT ${SRCS_MOC})
 # Include the generated header files
 include_directories(${CMAKE_BINARY_DIR}/slowmoVideo/slowmoUI)
 
+# add app icon
+if(MINGW)
+	# resource compilation for mingw
+	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/appicon_rc.o
+		COMMAND windres.exe -I${CMAKE_CURRENT_SOURCE_DIR}
+		-i${CMAKE_CURRENT_SOURCE_DIR}/res/appicon.rc
+		-o ${CMAKE_CURRENT_BINARY_DIR}/appicon_rc.o)
+	SET(SRCS ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/appicon_rc.o)
+endif(MINGW)
+
 # TODO msys ?
 message(STATUS "slowmoUI path ffmpeg : ${FFMPEG_LIBRARY_DIR} ")
 link_directories(${FFMPEG_LIBRARY_DIR})
@@ -168,6 +178,7 @@ Categories=Qt;AudioVideo;Video;\n")
 		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 endif()
+
 
 install(TARGETS slowmoUI DESTINATION ".")
 include(DeployQt4) # 2.8.7 or later
