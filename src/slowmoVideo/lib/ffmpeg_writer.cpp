@@ -32,6 +32,7 @@ VideoFFMPEG::VideoFFMPEG(int width,int height,double fps,const char *vcodec,cons
 	mHeight = height;
 	mWidth = width;
 
+	process = 0;
 #if 0	
 	char *pcodec = NULL;
     if (m_vcodec.length() > 0) {
@@ -55,11 +56,14 @@ VideoFFMPEG::~VideoFFMPEG()
 {
 	//TODO:
 	//m_dirFramesOrig.rmdir(".");
+	if (process != 0) {
+		qDebug() << "destroying process...";
 	if (process->state() == QProcess::Running) {
 		abort();
 		process->waitForFinished();
 	}
-
+	}
+	
 	free(m_vcodec);
 	free(m_filename);
 	free(m_videoOut);
@@ -118,6 +122,7 @@ int VideoFFMPEG::exportFrames(QString filepattern,int first,RenderTask_sV *progr
 	qDebug() << process->exitStatus();
 
 	delete process;
+	process = 0;
 	return 0;
 }
 
